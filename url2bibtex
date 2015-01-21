@@ -1,0 +1,56 @@
+#!/bin/bash
+# name: url2bibtex
+# description: transform web-page-information to bibtex.
+# version: 0.7
+# author: rednammoc
+
+function usage() {
+	echo "Usage $0 <url>"
+}
+
+function check_url() {
+	curl -s --head "${1}" | head -n 1 | grep "HTTP/1.[01] [23].." > /dev/null
+}
+
+function get_last_modified() {
+	curl -I -s "${1}" | grep Last-Modified | awk '{ print $3" "$4" "$5; }'
+}
+
+function get_title() {
+	wget -qO- "${1}" | perl -l -0777 -ne 'print $1 if /<title.*?>\s*(.*?)\s*<\/title/si' | recode html..
+}
+
+function get_publisher() {
+	local proto="$(echo $1 | grep :// | sed -e's,^\(.*://\).*,\1,g')"
+	local url="$(echo ${1/$proto/})"
+	local host="$(echo ${url} | cut -d/ -f1)"
+	local ip=$(ping -c 1 ${host} | gawk -F'[()]' '/PING/{print $2}')
+	whois "${ip}" | grep OrgName | awk '{for (i=2; i<=NF; i++) printf $i}'
+}
+
+url="${1}"
+if [ -z "${url}" ] ; then 
+	usage
+	exit 1
+fi
+
+if ! check_url "${url}" ; then
+	usage
+	echo -e "ERROR: Could not retrieve url."
+	exit 1
+fi
+
+publisher="$(get_publisher "${url}")"
+title=$(get_title "${url}")
+date=$(date --date="$(get_last_modified "${url}")" +'%Y/%m/%d')
+year=$(get_last_modified "${url}" | awk '{ print $3; }')
+accessed=$(date +%Y/%m/%d)
+short="$(echo $title | awk '{ print $1; }')$(date +'%Y%m%d%M%S')"
+
+echo "@misc{${short},"
+echo "  title = {{${title}}},"
+echo "  publisher = {${publisher}},"
+echo "  howpublished = \"\\url{${url}}\","
+echo "  year = {${year}},"
+echo "  note = \"{Accessed on ${accessed}}\""
+echo "}"
