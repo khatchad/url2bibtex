@@ -7,7 +7,7 @@ $ url2bibtex https://github.com/rednammoc/url2bibtex/tree/master
   title = {{rednammoc/url2bibtex - GitHub}},
   publisher = {GitHub,Inc.},
   howpublished = "\url{https://github.com/rednammoc/url2bibtex/tree/master}",
-  year = {},
+  year = {2015},
   note = "{Accessed on 2015/01/21}"
 }
 </pre>
